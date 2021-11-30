@@ -109,7 +109,8 @@ class SudokuState:
             singleton_cells = state.get_singleton_cells()
         
         return state
-        
+    
+    
     def check_valid_move(self, x, y, value):
         for i in range(9):
             if self.grid[x][i] == value:
@@ -185,22 +186,22 @@ class SudokuSolver:
         
         return cell_index           
          
-    def depth_first_search(self, sudoku : SudokuState): 
-        if sudoku.is_goal() and sudoku.check_sums():
-            if sudoku.check_sums():    
-                # SOLVED
-                print("solved")
-                return sudoku
-            else:
-                return np.full([9, 9], -1.)
-        else:
-            cell_index = self.pick_next_cell(sudoku)
-            if not cell_index is None:
-                value = list(sudoku.get_possible_values(cell_index[0], cell_index[1]))[0]
-                return self.depth_first_search(sudoku.set_value(cell_index[0], cell_index[1], value))
-            else:
-                print(sudoku.grid)
-                return False
+    def depth_first_search(self, sudoku : SudokuState):
+        cell_index = self.pick_next_cell(sudoku)
+        if cell_index is not None:
+            values = sudoku.get_possible_values(cell_index[0], cell_index[1])
+            
+            for value in values:
+                new_state = sudoku.set_value(cell_index[0], cell_index[1], value)
+                if new_state.is_goal():
+                    return new_state
+                if new_state.is_valid():
+                    deep_state = self.depth_first_search(new_state)
+                    if deep_state is not None and deep_state.is_goal():
+                        return deep_state
+                
+        return None
+        
         
 
 def sudoku_solver(sudoku):
@@ -218,11 +219,13 @@ def sudoku_solver(sudoku):
     solver = SudokuSolver()
     print(sudoku)
     solved_sudoku = solver.depth_first_search(SudokuState(sudoku))
-    
-    return solved_sudoku
+    if solved_sudoku is None:
+        return np.full([9, 9], -1)
+    else:
+        return solved_sudoku.grid
 
-sudokus = np.load(f"data/hard_puzzle.npy")
-solutions = np.load(f"data/hard_solution.npy")
+sudokus = np.load(f"data/medium_puzzle.npy")
+solutions = np.load(f"data/medium_solution.npy")
 
 for i in range(len(sudokus)): 
     start = time.perf_counter()
