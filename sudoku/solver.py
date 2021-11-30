@@ -32,12 +32,6 @@ class SudokuState:
                 if len(self.possible_values[i, j]) == 0:
                     return False
         return True
-    
-    def get_final_state(self):
-        if self.is_goal():
-            return self.grid
-        else:
-            return np.full([9, 9], -1)
         
     def get_possible_values(self, x, y):
         return copy.copy(self.possible_values[x, y])
@@ -158,22 +152,6 @@ class SudokuSolver:
         self.solution_found = False
         self.solution = np.full([9, 9], -1)
     
-    def solve(self, sudoku):
-        for i in range(9):
-            for j in range(9):
-                if sudoku.grid[i, j] == 0:
-                    for n in range(1, 10, 1):
-                        if sudoku.check_valid_move(i, j, n):
-                            sudoku.grid[i, j] = n
-                            self.solve(sudoku)
-                            sudoku.grid[i, j] = 0
-                            
-                    return self.solution
-        
-        if not self.solution_found:        
-            self.solution = np.copy(sudoku.grid)
-            self.solution_found = True
-    
     def pick_next_cell(self, sudoku : SudokuState):
         cell_index = None
         for i in range(9):
@@ -187,6 +165,9 @@ class SudokuSolver:
         return cell_index           
          
     def depth_first_search(self, sudoku : SudokuState):
+        if sudoku.is_goal():
+            return sudoku
+        
         cell_index = self.pick_next_cell(sudoku)
         if cell_index is not None:
             values = sudoku.get_possible_values(cell_index[0], cell_index[1])
@@ -199,7 +180,7 @@ class SudokuSolver:
                     deep_state = self.depth_first_search(new_state)
                     if deep_state is not None and deep_state.is_goal():
                         return deep_state
-                
+               
         return None
         
         
@@ -222,11 +203,16 @@ def sudoku_solver(sudoku):
     if solved_sudoku is None:
         return np.full([9, 9], -1)
     else:
-        return solved_sudoku.grid
+        if solved_sudoku.check_sums():
+            return solved_sudoku.grid
+        else:
+            return np.full([9, 9], -1)
+            
 
-sudokus = np.load(f"data/medium_puzzle.npy")
-solutions = np.load(f"data/medium_solution.npy")
 
+sudokus = np.load(f"data/very_easy_puzzle.npy")
+solutions = np.load(f"data/very_easy_solution.npy")
+print("\n\nVERY EASY\n\n")
 for i in range(len(sudokus)): 
     start = time.perf_counter()
     print(sudoku_solver(sudokus[i]))
@@ -234,3 +220,38 @@ for i in range(len(sudokus)):
     print(solutions[i])
     print(end - start)
     print("\n\n")
+    
+
+sudokus = np.load(f"data/easy_puzzle.npy")
+solutions = np.load(f"data/easy_solution.npy")
+print("\n\nEASY\n\n")
+for i in range(len(sudokus)): 
+    start = time.perf_counter()
+    print(sudoku_solver(sudokus[i]))
+    end = time.perf_counter()
+    print(solutions[i])
+    print(end - start)
+    print("\n\n")
+
+sudokus = np.load(f"data/medium_puzzle.npy")
+solutions = np.load(f"data/medium_solution.npy")
+print("\n\nMEDIUM\n\n")
+for i in range(len(sudokus)): 
+    start = time.perf_counter()
+    print(sudoku_solver(sudokus[i]))
+    end = time.perf_counter()
+    print(solutions[i])
+    print(end - start)
+    print("\n\n")
+    
+sudokus = np.load(f"data/hard_puzzle.npy")
+solutions = np.load(f"data/hard_solution.npy")
+print("\n\nHARD\n\n")
+for i in range(len(sudokus)): 
+    start = time.perf_counter()
+    print(sudoku_solver(sudokus[i]))
+    end = time.perf_counter()
+    print(solutions[i])
+    print(end - start)
+    print("\n\n")
+    
