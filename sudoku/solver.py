@@ -5,6 +5,7 @@ import operator
 
 class SudokuState:
     def __init__(self, grid):
+        self.failed = False
         self.grid = grid
         self.possible_values = np.array([set() for i in range(81)]).reshape(9, 9) 
         for x in range(9):
@@ -14,16 +15,21 @@ class SudokuState:
                     self.grid[x, y] = list(self.possible_values[x, y])[0]
         
     def is_goal(self):
-        for row in self.grid:
+        '''for row in self.grid:
             for square in row:
                 if square == 0:
                     return False
-        return True            
-    
-    def is_valid(self):
+        return True          ''' 
         for row in self.possible_values:
             for cell_values in row:
-                if len(cell_values) == 0:
+                if len(cell_values) != 1:
+                    return False
+        return True
+    
+    def is_valid(self):
+        for i in range(9):
+            for j in range(9):
+                if len(self.possible_values[i, j]) == 0:
                     return False
         return True
     
@@ -144,8 +150,6 @@ class SudokuState:
                     return False
                 
         return True
-    
-    
         
 
 class SudokuSolver:
@@ -173,7 +177,7 @@ class SudokuSolver:
         cell_index = None
         for i in range(9):
             for j in range(9):
-                if len(sudoku.possible_values[i, j]) > 1:
+                if sudoku.grid[i, j] == 0 and len(sudoku.possible_values[i, j]) > 1:
                     if cell_index is None:
                         cell_index = (i, j)
                     elif len(sudoku.possible_values[i, j]) < len(sudoku.possible_values[cell_index[0], cell_index[1]]):
@@ -181,18 +185,22 @@ class SudokuSolver:
         
         return cell_index           
          
-    def depth_first_search(self, sudoku : SudokuState):
+    def depth_first_search(self, sudoku : SudokuState): 
         if sudoku.is_goal() and sudoku.check_sums():
-            # SOLVED
-            print("solved")
-            return sudoku.grid
-        else:
-            if not sudoku.is_valid():
+            if sudoku.check_sums():    
+                # SOLVED
+                print("solved")
+                return sudoku
+            else:
                 return np.full([9, 9], -1.)
-            
+        else:
             cell_index = self.pick_next_cell(sudoku)
-            value = list(sudoku.get_possible_values(cell_index[0], cell_index[1]))[0]
-            return self.depth_first_search(copy.deepcopy(sudoku).set_value(cell_index[0], cell_index[1], value))
+            if not cell_index is None:
+                value = list(sudoku.get_possible_values(cell_index[0], cell_index[1]))[0]
+                return self.depth_first_search(sudoku.set_value(cell_index[0], cell_index[1], value))
+            else:
+                print(sudoku.grid)
+                return False
         
 
 def sudoku_solver(sudoku):
@@ -213,8 +221,9 @@ def sudoku_solver(sudoku):
     
     return solved_sudoku
 
-sudokus = np.load(f"data/medium_puzzle.npy")
-solutions = np.load(f"data/medium_solution.npy")
+sudokus = np.load(f"data/hard_puzzle.npy")
+solutions = np.load(f"data/hard_solution.npy")
+
 for i in range(len(sudokus)): 
     start = time.perf_counter()
     print(sudoku_solver(sudokus[i]))
