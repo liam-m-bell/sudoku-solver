@@ -40,8 +40,7 @@ class SudokuState:
         if (self.grid[x, y] != 0):
             return {self.grid[x, y]}
         else: 
-            values = self.get_row_values(y).union(self.get_column_values(x)).union(self.get_box_values(x, y))
-            return {1, 2, 3, 4, 5, 6, 7, 8, 9} - values - {0}
+            return {1, 2, 3, 4, 5, 6, 7, 8, 9} - self.get_related_values(x, y) - {0}
     
     def get_row_values(self, y):
         return set(np.transpose(self.grid)[y])
@@ -57,14 +56,49 @@ class SudokuState:
                 
         return values
     
-    def get_singleton_cells(self):
+    def get_related_values(self, x, y):
+        return self.get_row_values(y).union(self.get_column_values(x)).union(self.get_box_values(x, y))
+    
+    def get_related_possible_values(self, x, y):
+        values = set()
+        for i in range(9):
+            values.union(self.get_possible_values(x, i))
+            values.union(self.get_possible_values(i, y))
+            
+        for i in range(3 * (x // 3), 3 * (x // 3) + 3, 1):
+            for j in range(3 * (y // 3), 3 * (y // 3) + 3, 1):
+                values.union(self.get_possible_values(i, j))
+        
+        return values
+    
+    def get_unfilled_cells(self):
         cells = set()
         for x in range(9):
             for y in range(9):
-                if len(self.possible_values[x, y]) == 1 and self.grid[x, y] == 0:
+                if self.grid[x, y] == 0:
                     cells.add((x, y))
         return cells
+    
+    def get_singleton_cells(self):
+        cells = set()
+        for cell in self.get_unfilled_cells():
+            if len(self.possible_values[cell[0], cell[1]]) == 1:
+                cells.add(cell)              
+        return cells
         
+    def check_for_unique_values(self):
+        for cell in self.get_unfilled_cells():
+            x = cell[0]
+            y = cell[1]
+            for a in self.get_possible_values(x, y):
+                is_unique = True
+                for b in self.get_related_possible_values(x, y):
+                    if a == b:
+                        is_unique = False
+                        break
+                if is_unique:
+                    self.set_value(x, y, a)
+    
     def set_value(self, x, y, value):
         state = copy.deepcopy(self)
         
@@ -93,7 +127,7 @@ class SudokuState:
                     if value in state.possible_values[i, j]:
                         state.possible_values[i, j].remove(value)
             
-        # Singleton cells
+        # Singleton cells     
         singleton_cells = list(state.get_singleton_cells())
         while len(singleton_cells) > 0:
             a = singleton_cells[0][0]
@@ -101,6 +135,8 @@ class SudokuState:
             final_value = list(state.possible_values[a, b])[0]
             state = state.set_value(a, b, final_value)
             singleton_cells = state.get_singleton_cells()
+        
+            state.check_for_unique_values()
         
         return state
     
@@ -147,12 +183,7 @@ class SudokuState:
         return True
         
 
-class SudokuSolver:
-    def __init__(self):
-        self.solution_found = False
-        self.solution = np.full([9, 9], -1)
-    
-    def pick_next_cell(self, sudoku : SudokuState):
+def pick_next_cell(sudoku : SudokuState):
         cell_index = None
         for i in range(9):
             for j in range(9):
@@ -164,26 +195,26 @@ class SudokuSolver:
         
         return cell_index           
          
-    def depth_first_search(self, sudoku : SudokuState):
-        if sudoku.is_goal():
-            return sudoku
+def depth_first_search(sudoku : SudokuState):
+    if sudoku.is_goal():
+        return sudoku
+    
+
+    
+    cell_index = pick_next_cell(sudoku)
+    if cell_index is not None:
+        values = sudoku.get_possible_values(cell_index[0], cell_index[1])
         
-        cell_index = self.pick_next_cell(sudoku)
-        if cell_index is not None:
-            values = sudoku.get_possible_values(cell_index[0], cell_index[1])
+        for value in values:
+            new_state = sudoku.set_value(cell_index[0], cell_index[1], value)
+            if new_state.is_goal():
+                return new_state
+            if new_state.is_valid():
+                deep_state = depth_first_search(new_state)
+                if deep_state is not None and deep_state.is_goal():
+                    return deep_state
             
-            for value in values:
-                new_state = sudoku.set_value(cell_index[0], cell_index[1], value)
-                if new_state.is_goal():
-                    return new_state
-                if new_state.is_valid():
-                    deep_state = self.depth_first_search(new_state)
-                    if deep_state is not None and deep_state.is_goal():
-                        return deep_state
-               
-        return None
-        
-        
+    return None
 
 def sudoku_solver(sudoku):
     """
@@ -197,9 +228,7 @@ def sudoku_solver(sudoku):
         9x9 numpy array of integers
             It contains the solution, if there is one. If there is no solution, all array entries should be -1.
     """
-    solver = SudokuSolver()
-    print(sudoku)
-    solved_sudoku = solver.depth_first_search(SudokuState(sudoku))
+    solved_sudoku = depth_first_search(SudokuState(sudoku))
     if solved_sudoku is None:
         return np.full([9, 9], -1)
     else:
@@ -210,48 +239,25 @@ def sudoku_solver(sudoku):
             
 
 
-sudokus = np.load(f"data/very_easy_puzzle.npy")
-solutions = np.load(f"data/very_easy_solution.npy")
-print("\n\nVERY EASY\n\n")
-for i in range(len(sudokus)): 
+if __name__ == "__main__":
+    sudokus = np.load(f"data/medium_puzzle.npy")
+    solutions = np.load(f"data/medium_solution.npy")
+    print("\n\nHARD\n\n")
+    for i in range(len(sudokus)):
+        print(sudokus[i])
+        start = time.perf_counter()
+        result = sudoku_solver(sudokus[i])
+        end = time.perf_counter()
+        print(result)
+        print(solutions[i])
+        print(end - start)
+        print("\n\n")
+        
+    ''' sudokus = np.load(f"data/hard_puzzle.npy")
+    solutions = np.load(f"data/hard_solution.npy")
     start = time.perf_counter()
-    print(sudoku_solver(sudokus[i]))
+    for i in range(len(sudokus)):
+        sudoku_solver(sudokus[i])    
     end = time.perf_counter()
-    print(solutions[i])
-    print(end - start)
-    print("\n\n")
-    
-
-sudokus = np.load(f"data/easy_puzzle.npy")
-solutions = np.load(f"data/easy_solution.npy")
-print("\n\nEASY\n\n")
-for i in range(len(sudokus)): 
-    start = time.perf_counter()
-    print(sudoku_solver(sudokus[i]))
-    end = time.perf_counter()
-    print(solutions[i])
-    print(end - start)
-    print("\n\n")
-
-sudokus = np.load(f"data/medium_puzzle.npy")
-solutions = np.load(f"data/medium_solution.npy")
-print("\n\nMEDIUM\n\n")
-for i in range(len(sudokus)): 
-    start = time.perf_counter()
-    print(sudoku_solver(sudokus[i]))
-    end = time.perf_counter()
-    print(solutions[i])
-    print(end - start)
-    print("\n\n")
-    
-sudokus = np.load(f"data/hard_puzzle.npy")
-solutions = np.load(f"data/hard_solution.npy")
-print("\n\nHARD\n\n")
-for i in range(len(sudokus)): 
-    start = time.perf_counter()
-    print(sudoku_solver(sudokus[i]))
-    end = time.perf_counter()
-    print(solutions[i])
-    print(end - start)
-    print("\n\n")
-    
+    print(end - start)'''
+        
