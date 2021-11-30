@@ -136,7 +136,7 @@ class SudokuState:
             state = state.set_value(a, b, final_value)
             singleton_cells = state.get_singleton_cells()
         
-            state.check_for_unique_values()
+        state.check_for_unique_values()
         
         return state
     
@@ -198,9 +198,7 @@ def pick_next_cell(sudoku : SudokuState):
 def depth_first_search(sudoku : SudokuState):
     if sudoku.is_goal():
         return sudoku
-    
 
-    
     cell_index = pick_next_cell(sudoku)
     if cell_index is not None:
         values = sudoku.get_possible_values(cell_index[0], cell_index[1])
