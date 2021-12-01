@@ -7,7 +7,19 @@ class SudokuState:
     def __init__(self, grid):
         self.failed = False
         self.grid = grid
-        self.possible_values = np.array([set() for i in range(81)]).reshape(9, 9) 
+        self.possible_values = np.array([set() for i in range(81)]).reshape(9, 9)
+        
+        self.unfilled_cells = set()
+        for x in range(9):
+            for y in range(9):
+                if self.grid[x, y] == 0:
+                    self.unfilled_cells.add((x, y))
+                    
+        self.singleton_cells = set()
+        for cell in self.get_unfilled_cells():
+            if len(self.possible_values[cell[0], cell[1]]) == 1:
+                self.singleton_cells.add(cell)  
+        
         for x in range(9):
             for y in range(9):
                 self.possible_values[x, y] = self.get_initial_possible_values(x, y)
@@ -62,12 +74,15 @@ class SudokuState:
     def get_related_possible_values(self, x, y):
         values = set()
         for i in range(9):
-            values.union(self.get_possible_values(x, i))
-            values.union(self.get_possible_values(i, y))
+            if i != x:
+                values = values.union(self.get_possible_values(x, i))
+            if i != y:
+                values = values.union(self.get_possible_values(i, y))
             
         for i in range(3 * (x // 3), 3 * (x // 3) + 3, 1):
             for j in range(3 * (y // 3), 3 * (y // 3) + 3, 1):
-                values.union(self.get_possible_values(i, j))
+                if i != x and j != y:
+                    values = values.union(self.get_possible_values(i, j))
         
         return values
     
@@ -87,16 +102,11 @@ class SudokuState:
         return cells
         
     def check_for_unique_values(self):
-        for cell in self.get_unfilled_cells():
+        for cell in self.unfilled_cells:
             x = cell[0]
             y = cell[1]
             for a in self.get_possible_values(x, y):
-                is_unique = True
-                for b in self.get_related_possible_values(x, y):
-                    if a == b:
-                        is_unique = False
-                        break
-                if is_unique:
+                if not (a in self.get_related_possible_values(x, y)):
                     self.set_value(x, y, a)
     
     def set_value(self, x, y, value):
@@ -104,6 +114,7 @@ class SudokuState:
         
         state.possible_values[x, y] = {value}
         state.grid[x, y] = value
+        state.unfilled_cells.remove((x, y))
         
         
         # Update the grid
@@ -128,15 +139,14 @@ class SudokuState:
                         state.possible_values[i, j].remove(value)
             
         # Singleton cells     
-        singleton_cells = list(state.get_singleton_cells())
+        singleton_cells = list(state.singleton_cells)
         while len(singleton_cells) > 0:
             a = singleton_cells[0][0]
             b = singleton_cells[0][1]
             final_value = list(state.possible_values[a, b])[0]
+            state.singleton_cells.remove((a, b))
             state = state.set_value(a, b, final_value)
-            singleton_cells = state.get_singleton_cells()
-        
-        state.check_for_unique_values()
+            singleton_cells = state.singleton_cells
         
         return state
     
@@ -199,6 +209,8 @@ def depth_first_search(sudoku : SudokuState):
     if sudoku.is_goal():
         return sudoku
 
+    #sudoku.check_for_unique_values()
+    
     cell_index = pick_next_cell(sudoku)
     if cell_index is not None:
         values = sudoku.get_possible_values(cell_index[0], cell_index[1])
@@ -238,8 +250,8 @@ def sudoku_solver(sudoku):
 
 
 if __name__ == "__main__":
-    sudokus = np.load(f"data/medium_puzzle.npy")
-    solutions = np.load(f"data/medium_solution.npy")
+    '''sudokus = np.load(f"data/hard_puzzle.npy")
+    solutions = np.load(f"data/hard_solution.npy")
     print("\n\nHARD\n\n")
     for i in range(len(sudokus)):
         print(sudokus[i])
@@ -249,13 +261,13 @@ if __name__ == "__main__":
         print(result)
         print(solutions[i])
         print(end - start)
-        print("\n\n")
+        print("\n\n")'''
         
-    ''' sudokus = np.load(f"data/hard_puzzle.npy")
+    sudokus = np.load(f"data/hard_puzzle.npy")
     solutions = np.load(f"data/hard_solution.npy")
     start = time.perf_counter()
     for i in range(len(sudokus)):
         sudoku_solver(sudokus[i])    
     end = time.perf_counter()
-    print(end - start)'''
+    print(end - start)
         
