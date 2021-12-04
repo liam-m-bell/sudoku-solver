@@ -213,8 +213,10 @@ class SudokuState:
                 if value in state.possible_values[x, i]:
                     state.possible_values[x, i].remove(value)
                     
-                    '''if len(state.possible_values[x, i]) == 1:
-                        state.singleton_cells.add((x, i))'''
+                    if len(state.possible_values[x, i]) == 0:
+                        return state
+                    if len(state.possible_values[x, i]) == 1:
+                        state.singleton_cells.add((x, i))
 
         # Column
         for i in range(9):
@@ -222,8 +224,10 @@ class SudokuState:
                 if value in state.possible_values[i, y]:
                     state.possible_values[i, y].remove(value)
                     
-                    '''if len(state.possible_values[i, y]) == 1:
-                        state.singleton_cells.add((i, y))'''
+                    if len(state.possible_values[i, y]) == 0:
+                        return state
+                    if len(state.possible_values[i, y]) == 1:
+                        state.singleton_cells.add((i, y))
                 
         # Box
         for i in range(3 * (x // 3), 3 * (x // 3) + 3, 1):
@@ -232,32 +236,25 @@ class SudokuState:
                     if value in state.possible_values[i, j]:
                         state.possible_values[i, j].remove(value)
                         
-                        '''if len(state.possible_values[i, j]) == 1:
-                            state.singleton_cells.add((i, j))'''
+                        if len(state.possible_values[i, j]) == 0:
+                            return state
+                        if len(state.possible_values[i, j]) == 1:
+                            state.singleton_cells.add((i, j))
+                        
             
         # Assign values to singleton cells (cells with only one possible value)
-        singleton_cells = list(state.get_singleton_cells())
+        singleton_cells = list(state.singleton_cells)
         while len(singleton_cells) > 0:
             a = singleton_cells[0][0]
             b = singleton_cells[0][1]
+            
+            if len(state.possible_values[a, b]) == 0:
+                break
+            
             final_value = list(state.possible_values[a, b])[0]
-            #state.singleton_cells.remove((a, b))
+            state.singleton_cells.remove((a, b))
             state = state.set_value(a, b, final_value)
             singleton_cells = list(state.singleton_cells)
-        
-        
-        '''
-        #singleton_cells = list(state.get_singleton_cells())
-        singleton_cells = list(state.singleton_cells)
-        singleton_cells = list(state.get_singleton_cells())
-        while len(singleton_cells) > 0:
-            a = singleton_cells[0][0]
-            b = singleton_cells[0][1]
-            final_value = list(state.possible_values[a, b])[0]
-            #state.singleton_cells.remove((a, b))
-            state = state.set_value(a, b, final_value)
-            singleton_cells = list(state.get_singleton_cells())'''
-            
             
         return state
     
