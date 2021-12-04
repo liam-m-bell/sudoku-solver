@@ -1,6 +1,6 @@
-from typing import Set
 import numpy as np
 import copy
+import time
 
 class SudokuState:
     """A state of a partially completed Sudoku puzzle.
@@ -14,6 +14,13 @@ class SudokuState:
                 self.possible_values[x, y] = self.get_initial_possible_values(x, y)
                 if len(self.possible_values[x, y]) == 1:
                     self.grid[x, y] = list(self.possible_values[x, y])[0]
+                    
+        self.singleton_cells = set()
+        for cell in self.get_unfilled_cells():
+            if len(self.possible_values[cell[0], cell[1]]) == 1:
+                self.singleton_cells.add(cell)  
+
+
         
     def is_goal(self):
         """State is a goal state if all cells have only one possible value.
@@ -196,7 +203,7 @@ class SudokuState:
         state = copy.deepcopy(self)
         
         state.possible_values[x, y] = {value}
-        state.grid[x, y] = value      
+        state.grid[x, y] = value     
         
         # Propagate the constraints by updating the possible values of the related cells.
 
@@ -205,12 +212,18 @@ class SudokuState:
             if i != y:
                 if value in state.possible_values[x, i]:
                     state.possible_values[x, i].remove(value)
+                    
+                    '''if len(state.possible_values[x, i]) == 1:
+                        state.singleton_cells.add((x, i))'''
 
         # Column
         for i in range(9):
             if i != x:
                 if value in state.possible_values[i, y]:
                     state.possible_values[i, y].remove(value)
+                    
+                    '''if len(state.possible_values[i, y]) == 1:
+                        state.singleton_cells.add((i, y))'''
                 
         # Box
         for i in range(3 * (x // 3), 3 * (x // 3) + 3, 1):
@@ -218,6 +231,9 @@ class SudokuState:
                 if not (i == x and j == y):
                     if value in state.possible_values[i, j]:
                         state.possible_values[i, j].remove(value)
+                        
+                        '''if len(state.possible_values[i, j]) == 1:
+                            state.singleton_cells.add((i, j))'''
             
         # Assign values to singleton cells (cells with only one possible value)
         singleton_cells = list(state.get_singleton_cells())
@@ -225,7 +241,24 @@ class SudokuState:
             a = singleton_cells[0][0]
             b = singleton_cells[0][1]
             final_value = list(state.possible_values[a, b])[0]
+            #state.singleton_cells.remove((a, b))
             state = state.set_value(a, b, final_value)
+            singleton_cells = list(state.singleton_cells)
+        
+        
+        '''
+        #singleton_cells = list(state.get_singleton_cells())
+        singleton_cells = list(state.singleton_cells)
+        singleton_cells = list(state.get_singleton_cells())
+        while len(singleton_cells) > 0:
+            a = singleton_cells[0][0]
+            b = singleton_cells[0][1]
+            final_value = list(state.possible_values[a, b])[0]
+            #state.singleton_cells.remove((a, b))
+            state = state.set_value(a, b, final_value)
+            singleton_cells = list(state.get_singleton_cells())'''
+            
+            
         return state
     
     def check_sums(self):
@@ -352,3 +385,15 @@ def sudoku_solver(sudoku):
             return solved_sudoku.grid
         else:
             return np.full([9, 9], -1)
+
+if __name__ == "__main__":
+    sudokus = np.load(f"data/hard_puzzle.npy")
+    solutions = np.load(f"data/hard_solution.npy")
+
+    for i in range(len(sudokus)): 
+        start = time.perf_counter()
+        print(sudoku_solver(sudokus[i]))
+        end = time.perf_counter()
+        print(solutions[i])
+        print(end - start)
+        print("\n\n")
