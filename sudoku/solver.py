@@ -15,10 +15,7 @@ class SudokuState:
                 if len(self.possible_values[x, y]) == 1:
                     self.grid[x, y] = list(self.possible_values[x, y])[0]
                     
-        self.singleton_cells = set()
-        for cell in self.get_unfilled_cells():
-            if len(self.possible_values[cell[0], cell[1]]) == 1:
-                self.singleton_cells.add(cell)  
+        self.singleton_cells = self.get_singleton_cells()
 
 
         
@@ -214,6 +211,7 @@ class SudokuState:
                     state.possible_values[x, i].remove(value)
                     
                     if len(state.possible_values[x, i]) == 0:
+                        state.singleton_cells.remove((x, i))
                         return state
                     if len(state.possible_values[x, i]) == 1:
                         state.singleton_cells.add((x, i))
@@ -225,6 +223,7 @@ class SudokuState:
                     state.possible_values[i, y].remove(value)
                     
                     if len(state.possible_values[i, y]) == 0:
+                        state.singleton_cells.remove((i, y))
                         return state
                     if len(state.possible_values[i, y]) == 1:
                         state.singleton_cells.add((i, y))
@@ -237,6 +236,7 @@ class SudokuState:
                         state.possible_values[i, j].remove(value)
                         
                         if len(state.possible_values[i, j]) == 0:
+                            state.singleton_cells.remove((i, j))
                             return state
                         if len(state.possible_values[i, j]) == 1:
                             state.singleton_cells.add((i, j))
@@ -247,9 +247,6 @@ class SudokuState:
         while len(singleton_cells) > 0:
             a = singleton_cells[0][0]
             b = singleton_cells[0][1]
-            
-            if len(state.possible_values[a, b]) == 0:
-                break
             
             final_value = list(state.possible_values[a, b])[0]
             state.singleton_cells.remove((a, b))
@@ -327,14 +324,14 @@ def pick_next_cell(sudoku : SudokuState):
     """    
     cell_index = None
     for i in range(9):
-        for j in range(9):
+        for j in range(9):  
             if sudoku.grid[i, j] == 0 and len(sudoku.possible_values[i, j]) > 1:
                 if cell_index is None:
                     cell_index = (i, j)
                 elif len(sudoku.possible_values[i, j]) < len(sudoku.possible_values[cell_index[0], cell_index[1]]):
                     cell_index = (i, j)
     
-    return cell_index           
+    return cell_index
          
 def depth_first_search(sudoku : SudokuState):
     """Perform depth first search on a sudoku state, trying possible values for each cell.
