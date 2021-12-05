@@ -34,7 +34,7 @@ The state contains a two-dimensional integer numpy array to store the values tha
 Another two-dimensional numpy array is also used to store the possible values that each of the cells in the grid could take. Each element in the array is a set which contains the possible values each cell with the corresponding index.
 A set was used to store the possible values, as the values are an unordered collection and each element is unique.
 
-A set of tuples is used to store the indices of the singleton cells. The set of added to when a cell's length of possible values becomes one (and also removed when either the value of that cell is set or the cell has no possible values).
+A set of tuples is used to store the indices of the singleton cells. The set of added to when a cell's length of possible values becomes one.
 To begin with a different approach of searching for singleton cells each time a new value was set, was used. However, this approach, on average, took over twice as long to solve most of the hard sudoku puzzles, compared to only updating a set of values only when a change was needed.
 
 The encapsulation of this data in a class was very important so that states could be easily used in the search and set value functions which also utilise python's library which allows the deep copying of objects so that new states could be easily created.

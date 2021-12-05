@@ -211,7 +211,6 @@ class SudokuState:
                     state.possible_values[x, i].remove(value)
                     
                     if len(state.possible_values[x, i]) == 0:
-                        state.singleton_cells.remove((x, i))
                         return state
                     if len(state.possible_values[x, i]) == 1:
                         state.singleton_cells.add((x, i))
@@ -223,7 +222,6 @@ class SudokuState:
                     state.possible_values[i, y].remove(value)
                     
                     if len(state.possible_values[i, y]) == 0:
-                        state.singleton_cells.remove((i, y))
                         return state
                     if len(state.possible_values[i, y]) == 1:
                         state.singleton_cells.add((i, y))
@@ -236,7 +234,6 @@ class SudokuState:
                         state.possible_values[i, j].remove(value)
                         
                         if len(state.possible_values[i, j]) == 0:
-                            state.singleton_cells.remove((i, j))
                             return state
                         if len(state.possible_values[i, j]) == 1:
                             state.singleton_cells.add((i, j))
@@ -247,6 +244,10 @@ class SudokuState:
         while len(singleton_cells) > 0:
             a = singleton_cells[0][0]
             b = singleton_cells[0][1]
+            
+            # If cell has no possible values then it is no longer a singleton cell
+            if len(state.possible_values[a, b]) == 0:
+                break
             
             final_value = list(state.possible_values[a, b])[0]
             state.singleton_cells.remove((a, b))
